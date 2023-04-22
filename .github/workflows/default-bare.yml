@@ -69,14 +69,17 @@ jobs:
         run: |
           set -x
           cat /opt/jupyterhub/config.yaml
+        if: ${{ always() }}
         continue-on-error: true
       - name: After script - network
         run: |
           set -x
           sudo ss -tunap | grep LISTEN
+        if: ${{ always() }}
         continue-on-error: true
       - name: After script - process
         run: |
           set -x
           ps aux
+        if: ${{ always() }}
         continue-on-error: true
