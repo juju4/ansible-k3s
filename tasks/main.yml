@@ -111,11 +111,9 @@
   block:
     - name: SHELL; locate helm binary
       ansible.builtin.command:
-        cmd: command -v helm
-      args:
-        executable: /bin/bash
+        cmd: which helm
       register: helm_found
-      ignore_errors: true
+      failed_when: false
 
     - name: Adjust helm path based on env
       ansible.builtin.set_fact:
