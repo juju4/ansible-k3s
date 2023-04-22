@@ -29,4 +29,4 @@
         (ansible_os_family == "RedHat" and ansible_distribution_major_version | int >= 8)
   roles:
     - geerlingguy.docker
-    - cyverse-ansible.ansible_k3s
+    - cyverse_ansible.ansible_k3s
