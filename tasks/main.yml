@@ -127,6 +127,8 @@
         cmd: |
           set -o pipefail
           curl https://raw.githubusercontent.com/helm/helm/HEAD/scripts/get-helm-3 | {{ HELM_INSTALL_DIR | default('') }} bash
+      args:
+        executable: /bin/bash
       when: helm_found is failed
 
 - name: Import k3s-install
