@@ -122,12 +122,14 @@ jobs:
         continue-on-error: true
       - name: After script - helm
         run: |
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
           set -x
           helm ls --all-namespaces
         if: ${{ always() }}
         continue-on-error: true
       - name: After script - Aquasec Kubebench
         run: |
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
           set -x
           curl -O https://raw.githubusercontent.com/aquasecurity/kube-bench/main/job.yaml
           kubectl apply -f job.yaml
@@ -139,14 +141,17 @@ jobs:
         continue-on-error: true
       - name: After script - Kubescape
         run: |
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
           set -x
           curl -s https://raw.githubusercontent.com/kubescape/kubescape/master/install.sh | /bin/bash
+          export PATH=$PATH:/home/runner/.kubescape/bin
           kubescape scan --enable-host-scan --verbose
         if: ${{ always() }}
         continue-on-error: true
       - name: After script - Inspec CIS benchmarks
         run: |
           export CHEF_LICENSE="accept"
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
           set -x
           curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec
           git clone https://github.com/dev-sec/cis-kubernetes-benchmark
