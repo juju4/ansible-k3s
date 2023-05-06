@@ -62,12 +62,36 @@ jobs:
           cd $GITHUB_WORKSPACE/$ANSIBLE_ROLE && ansible-playbook --connection=local --become -vvv molecule/default/converge.yml | tee /tmp/idempotency.log | grep -q 'changed=0.*failed=0'  && (echo 'Idempotence test: pass' && exit 0)  || (echo 'Idempotence test: fail' && cat /tmp/idempotency.log && exit 0)
       - name: On failure
         run: |
-          cd $GITHUB_WORKSPACE/$ANSIBLE_ROLE
-          ansible --connection=local -m setup localhost
-        if: env.WORKFLOW_CONCLUSION == 'failure'  # notify only if failure
+          systemctl -l --no-pager status
+          systemctl -l --no-pager --failed
+          ls -l /usr/bin/ | egrep '(python|pip|ansible)'
+          pip freeze
+          pip3 freeze
+          ip addr
+          cat /etc/resolv.conf
+          host www.google.com
+          ping -c 1 www.google.com || true
+          ping -c 1 8.8.8.8 || true
+        if: ${{ failure() }}
+        continue-on-error: true
+      - name: After script - ansible setup
+        run: |
+          ansible -i inventory --connection=local -m setup localhost
+        if: ${{ always() }}
+        continue-on-error: true
+      - name: After script - systemd
+        run: |
+          systemctl -l --no-pager status docker || true
+          systemctl -l --no-pager status k3s || true
+          cat /etc/systemd/system/k3s.service
+          systemctl -l --no-pager status kubelet || true
+          systemd-analyze --no-pager security || true
+        if: ${{ always() }}
+        continue-on-error: true
       - name: After script - files
         run: |
           set -x
+          ls -l /etc/rancher/k3s/
           cat /etc/rancher/k3s/config.yaml
         if: ${{ always() }}
         continue-on-error: true
@@ -81,5 +105,57 @@ jobs:
         run: |
           set -x
           ps aux
+        if: ${{ always() }}
+        continue-on-error: true
+      - name: After script - k8
+        run: |
+          set -x
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          kubectl get nodes
+          kubectl get pods --all-namespaces -o wide
+          kubectl get services
+          kubectl get apiservices
+          k3s check-config || true
+          kubectl config view || true
+          sudo ctr image pull docker.io/rancher/mirrored-pause:latest || true
+        if: ${{ always() }}
+        continue-on-error: true
+      - name: After script - helm
+        run: |
+          set -x
+          helm ls --all-namespaces
+        if: ${{ always() }}
+        continue-on-error: true
+      - name: After script - Aquasec Kubebench
+        run: |
+          set -x
+          curl -O https://raw.githubusercontent.com/aquasecurity/kube-bench/main/job.yaml
+          kubectl apply -f job.yaml
+          kubectl get pods
+          sleep 15
+          kubectl get pods
+          kubectl logs $(kubectl get pods -o=name | grep kube-bench | sed "s/^.\{4\}//")
+        if: ${{ always() }}
+        continue-on-error: true
+      - name: After script - Kubescape
+        run: |
+          set -x
+          curl -s https://raw.githubusercontent.com/kubescape/kubescape/master/install.sh | /bin/bash
+          kubescape scan --enable-host-scan --verbose
+        if: ${{ always() }}
+        continue-on-error: true
+      - name: After script - Inspec CIS benchmarks
+        run: |
+          export CHEF_LICENSE="accept"
+          set -x
+          curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec
+          git clone https://github.com/dev-sec/cis-kubernetes-benchmark
+          inspec exec cis-kubernetes-benchmark
+        if: ${{ always() }}
+        continue-on-error: true
+      - name: After script - journalctl
+        run: |
+          set -x
+          journalctl -xeu k3s -l --no-pager
         if: ${{ always() }}
         continue-on-error: true
