@@ -111,12 +111,12 @@ jobs:
         run: |
           set -x
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-          kubectl get nodes
-          kubectl get pods --all-namespaces -o wide
-          kubectl get services
-          kubectl get apiservices
-          k3s check-config || true
-          kubectl config view || true
+          sudo kubectl get nodes
+          sudo kubectl get pods --all-namespaces -o wide
+          sudo kubectl get services
+          sudo kubectl get apiservices
+          sudo k3s check-config || true
+          sudo kubectl config view || true
           sudo ctr image pull docker.io/rancher/mirrored-pause:latest || true
         if: ${{ always() }}
         continue-on-error: true
@@ -124,7 +124,7 @@ jobs:
         run: |
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
           set -x
-          helm ls --all-namespaces
+          sudo helm ls --all-namespaces
         if: ${{ always() }}
         continue-on-error: true
       - name: After script - Aquasec Kubebench
@@ -132,11 +132,11 @@ jobs:
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
           set -x
           curl -O https://raw.githubusercontent.com/aquasecurity/kube-bench/main/job.yaml
-          kubectl apply -f job.yaml
-          kubectl get pods
+          sudo kubectl apply -f job.yaml
+          sudo kubectl get pods
           sleep 15
-          kubectl get pods
-          kubectl logs $(kubectl get pods -o=name | grep kube-bench | sed "s/^.\{4\}//")
+          sudo kubectl get pods
+          sudo kubectl logs $(kubectl get pods -o=name | grep kube-bench | sed "s/^.\{4\}//")
         if: ${{ always() }}
         continue-on-error: true
       - name: After script - Kubescape
@@ -145,7 +145,7 @@ jobs:
           set -x
           curl -s https://raw.githubusercontent.com/kubescape/kubescape/master/install.sh | /bin/bash
           export PATH=$PATH:/home/runner/.kubescape/bin
-          kubescape scan --enable-host-scan --verbose
+          sudo kubescape scan --enable-host-scan --verbose
         if: ${{ always() }}
         continue-on-error: true
       - name: After script - Inspec CIS benchmarks
@@ -155,7 +155,7 @@ jobs:
           set -x
           curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec
           git clone https://github.com/dev-sec/cis-kubernetes-benchmark
-          inspec exec cis-kubernetes-benchmark
+          sudo inspec exec cis-kubernetes-benchmark
         if: ${{ always() }}
         continue-on-error: true
       - name: After script - journalctl
