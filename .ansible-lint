@@ -5,3 +5,5 @@ warn_list:
   - no-changed-when
   - inline-env-var
   - no-handler
+exclude_paths:
+  - .github/workflows/galaxy.yml
