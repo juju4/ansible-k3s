@@ -1,4 +1,4 @@
-write-kubeconfig-mode: "0644"
+write-kubeconfig-mode: "{{ k3s_master_write_kubeconfig_mode }}"
 {% if inventory_hostname in groups['k3s_masters'] and K3S_POSTGRESQL_ENABLE is defined and K3S_POSTGRESQL_ENABLE|bool %}
 datastore-endpoint: "postgres://{{ K3S_POSTGRESQL_USER }}:{{ K3S_POSTGRESQL_PASS }}@{{ K3S_POSTGRESQL_HOST }}:{{ K3S_POSTGRESQL_PORT }}/{{ K3S_POSTGRESQL_DB }}"
 {% endif %}
@@ -26,3 +26,26 @@ disable-network-policy: true
 kubelet-arg:
   - "runtime-request-timeout=30m"
 #  - "image-pull-progress-deadline=60m"
+
+# https://docs.k3s.io/security/hardening-guide#configuration-for-kubernetes-components
+protect-kernel-defaults: true
+secrets-encryption: true
+kube-apiserver-arg:
+{% if k3s_psa_enable | bool %}
+  - 'admission-control-config-file=/var/lib/rancher/k3s/server/psa.yaml'
+{% endif %}
+{% if k3s_audit_enable | bool %}
+  - 'audit-log-path=/var/lib/rancher/k3s/server/logs/audit.log'
+  - 'audit-policy-file=/var/lib/rancher/k3s/server/audit.yaml'
+  - 'audit-log-maxage=30'
+  - 'audit-log-maxbackup=10'
+  - 'audit-log-maxsize=100'
+{% endif %}
+  - 'request-timeout=300s'
+  - 'service-account-lookup=true'
+kube-controller-manager-arg:
+  - 'terminated-pod-gc-threshold=10'
+  - 'use-service-account-credentials=true'
+kubelet-arg:
+  - 'streaming-connection-idle-timeout=5m'
+  - 'make-iptables-util-chains=true'

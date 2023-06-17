@@ -94,6 +94,8 @@
 
     - name: SHELL; execute install script on master nodes first
       ansible.builtin.shell: "/opt/k3s/k3s_install.sh {{ k3s_docker_flag | default('') }} > /opt/k3s/install.{{ ansible_date_time.iso8601 }}.log 2>&1"
+      args:
+        creates: /etc/systemd/system/k3s.service
       environment:
         INSTALL_K3S_VERSION: "{{ K3S_VERSION | default('') }}"
         INSTALL_K3S_SKIP_START: 'true'
@@ -108,6 +110,10 @@
       until: k3s_service.status.ActiveState is defined and k3s_service.status.ActiveState == "active"
       retries: 15
       delay: 20
+
+- name: Debug
+  ansible.builtin.debug:
+    var: "{{ hostvars[groups['k3s_masters'][0]]['ansible_default_ipv4'] }}"
 
 - name: SET_FACT; obtain the k3s_master_ip
   ansible.builtin.set_fact:
@@ -128,6 +134,7 @@
       register: k3s_master_token_file
       delegate_to: "{{ groups['k3s_masters'][0] }}"
       run_once: true
+      changed_when: false
 
     - name: SET_FACT; set the k3s_token fact for all nodes
       ansible.builtin.set_fact:
@@ -181,3 +188,6 @@
       until: k3s_agent_service.status.ActiveState is defined and k3s_agent_service.status.ActiveState == "active"
       retries: 15
       delay: 20
+
+- name: Import k3s-security
+  ansible.builtin.import_tasks: k3s-security.yml

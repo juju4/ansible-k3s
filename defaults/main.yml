@@ -17,3 +17,13 @@ K3S_POSTGRESQL_DB:      "kubernetes"
 K3S_POSTGRESQL_USER:    "k3suser"
 
 K3S_CALICO_ENABLE: false
+k3s_master_write_kubeconfig_mode: "0600"
+k3s_psa_enable: false
+k3s_psa_template: psa.yaml
+k3s_network_policy_enable: false
+k3s_network_policy_templates:
+  # - network-base.yaml
+  # - network-dns-only.yaml
+  - network-metrics-traefik.yaml
+k3s_audit_enable: false
+k3s_audit_template: audit.yaml
