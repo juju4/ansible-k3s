@@ -1,0 +1,45 @@
+---
+# https://docs.k3s.io/security/hardening-guide
+
+- name: K3S hardening sysctl
+  ansible.posix.sysctl:
+    name: "{{ item.n }}"
+    value: "{{ item.v }}"
+    sysctl_file: /etc/sysctl.d/90-kubelet.conf
+    sysctl_set: true
+    reload: true
+  loop:
+    - { n: vm.panic_on_oom, v: 0 }
+    - { n: vm.overcommit_memory, v: 1 }
+    - { n: kernel.panic, v: 10 }
+    - { n: kernel.panic_on_oops, v: 1 }
+    - { n: kernel.keys.root_maxbytes, v: 25000000 }
+
+- name: Set k3s psa
+  ansible.builtin.template:
+    src: "{{ k3s_psa_template }}.j2"
+    dest: "/var/lib/rancher/k3s/server/{{ k3s_psa_template | basename }}"
+    mode: 0644
+  when: k3s_psa_enable | bool
+
+- name: Set k3s network policies
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/var/lib/rancher/k3s/server/manifests/{{ item | basename }}"
+    mode: 0644
+  loop: "{{ k3s_network_policy_templates }}"
+  when: k3s_network_policy_enable | bool
+
+- name: Ensure audit log directory exists
+  ansible.builtin.file:
+    path: /var/lib/rancher/k3s/server/logs
+    state: directory
+    mode: 0755
+  when: k3s_audit_enable | bool
+
+- name: Set k3s audit policy
+  ansible.builtin.template:
+    src: "{{ k3s_audit_template }}.j2"
+    dest: "/var/lib/rancher/k3s/server/{{ k3s_audit_template | basename }}"
+    mode: 0644
+  when: k3s_audit_enable | bool
